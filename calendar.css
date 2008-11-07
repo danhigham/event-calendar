@@ -1,18 +1,30 @@
 div#calendar{
-	
+	width : 917;
+	float : left;
 }
 
 div#calendar ul.daylist {
 	display : inline;
+	float:left;
+  margin:0;
+  padding:0;
 }
 
 div#calendar ul.daylist li {
 	display : block;
-	height : 150px;
-	width : 150px;
+	height : 120px;
+	width : 120px;
 	float : left;
 	text-align : right;
-	margin : 2px;
-	padding : 5px;
-	background : #efefef;
+	margin : 1px 1px 0 0;
+	padding : 0 5px 5px 5px;
+	background:#E7E7E7 url(cal-day.png) no-repeat scroll 0 0;
+	font-size : 0.7em;
+	font-weight : bold;
+	color : #ffffff;
+}
+
+div#calendar ul.daylist li.off-month {
+ color : #aeaeae;
+ opacity : 0.5;
 }
