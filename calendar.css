@@ -1,0 +1,18 @@
+div#calendar{
+	
+}
+
+div#calendar ul.daylist {
+	display : inline;
+}
+
+div#calendar ul.daylist li {
+	display : block;
+	height : 150px;
+	width : 150px;
+	float : left;
+	text-align : right;
+	margin : 2px;
+	padding : 5px;
+	background : #efefef;
+}
