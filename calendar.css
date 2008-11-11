@@ -31,8 +31,6 @@ div#calendar ul.daylist li.off-month {
 
 div.event {
 	height : 15px;
-	width : 100px;
 	margin-top : 20px;
-	margin-left : 1px;
 	background : #0a0a0a;
 }

@@ -1,5 +1,5 @@
 function doCal() {
-	var myCalendar = new EventCalendar('myCalendar', 11, 2008, {"events_offset" : [0, 0]});
+	var myCalendar = new EventCalendar('myCalendar', 11, 2008, {"events_offset" : [0, 20]});
 	/*
 	myCalendar.SetMonth(11);
 	myCalendar.SetYear(2008);
@@ -7,20 +7,23 @@ function doCal() {
 	*/
 	
 	var myEvents = new EventCollection();
-	myEvents.Events.push ( new Event ("blah", "2008/11/01", "2008/11/05", "Test event") );
-	myEvents.Events.push ( new Event ("blah 2", "2008/11/06", "2008/11/07", "Test event 2") );
-
+	myEvents.Events.push ( new Event ("blah", "2008/11/01", "2008/11/05", "Test event", "#ff0000") );
+	myEvents.Events.push ( new Event ("blah 2", "2008/11/05", "2008/11/09", "Test event 2", "#00ff00") );
+	myEvents.Events.push ( new Event ("blah 2", "2008/11/08", "2008/11/12", "Test event 2", "#0000ff") );
+	myEvents.Events.push ( new Event ("blah 2", "2008/11/11", "2008/11/13", "Test event 2", "#ff0000") );
+	
 	myCalendar.AddEventsInJSON(myEvents.toJSON());
 
 }
 
-var Event = function (name, start, end, description) { 
+var Event = function (name, start, end, description, color) { 
 	return {
 		Name : name,
 		Start : start,
 		End : end,
 		Description : description,
-		toJSON : function () { return "{ \"name\" : \"" + this.Name + "\", \"start\" : \"" + this.Start + "\", \"end\" : \"" + this.End + "\", \"description\" : \"" + this.Description + "\" }"; }
+		Color : color,
+		toJSON : function () { return "{ \"name\" : \"" + this.Name + "\", \"start\" : \"" + this.Start + "\", \"end\" : \"" + this.End + "\", \"description\" : \"" + this.Description + "\", \"color\" : \"" + this.Color + "\" }";}
 	}
 }
 
@@ -47,6 +50,7 @@ var EventCalendar = function (dom_element, month, year, settings) {
 	var calendar_visible = false;
 	var calendar_start_date = null;
 	var calendar_end_date = null;
+	var date_matrix = {};
 	
 	var calendar_settings = settings || null;
 	
@@ -106,7 +110,7 @@ var EventCalendar = function (dom_element, month, year, settings) {
 	    return document.getElementById("cell_" + (cell_date.getMonth() + 1) + "_" + cell_date.getDate());
 	}
 
-	function plot_data(events){
+	function plot_data(events, cell_matrix){
 		// This function plots event data on to the calendar, it takes a parameter in JSON format
 		// that holds all the event particulars;
 		//
@@ -120,19 +124,68 @@ var EventCalendar = function (dom_element, month, year, settings) {
 	    var event_offset_Y = calendar_settings.events_offset[1]; 
 	    var event_collection = eval( events );
 	    
-	    for (var x=0; x<event_collection.eventcount; x++){
-	    	var new_event = event_collection.events[x];
+	    for (var e=0; e<event_collection.eventcount; e++){
+	    	var new_event = event_collection.events[e];
 	    	
-	    	var date_cell = get_calendar_cell(new_event.start);
+	    	var int_date_start = Date.parse(new_event.start)
+	    	var int_date_end = Date.parse(new_event.end)
 	    	
-	    	var eventBlock = document.createElement("div");
+	    	var start_date_cell = get_calendar_cell(new_event.start);
+	    	//var end_date_cell = get_calendar_cell(new_event.end);
+	    	
+	    	var free_row = 0;
+	    	
+	    	for(var x = int_date_start; x<=int_date_end; x+=86400000){
+	    		var current_date = new Date(x);
+	    		var current_cell = get_calendar_cell(current_date);
+	    		
+				//Check each cell to see if there has been a bar placed at the the current free row, if there is bump it up one...
+				if (cell_matrix[current_date]) {
+					var cell_bitmask = cell_matrix[current_date];
+					if (cell_bitmask[free_row] == "1") free_row ++;	
+				} else 
+					//Create a blank entry for this date
+					cell_matrix[current_date] = ("0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0".split(","));
+    		}
+    		
+    		var eventBlock = document.createElement("div");
 	    	eventBlock.style.position = 'absolute';
-	    	eventBlock.style.top = (date_cell.offsetTop + event_offset_Y) + 'px';
-	    	eventBlock.style.left = (date_cell.offsetLeft + event_offset_X) + 'px';
+	    	eventBlock.style.top = (start_date_cell.offsetTop + (event_offset_Y * free_row)) + 'px';
+	    	eventBlock.style.left = (start_date_cell.offsetLeft + event_offset_X) + 'px';
+	    	eventBlock.style.backgroundColor = new_event.color;
 	    	eventBlock.className = "event";
+	    	var eventBlockCell = start_date_cell;
+	    	
+    		// Now we know which row is free across all dates, plot the event
+    		for(var x = int_date_start; x<=int_date_end; x+=86400000){
+    			var current_date = new Date(x);
+	    		date_matrix[current_date][free_row] = "1";
+	    		
+				if ((current_date.getDay() == 0) && (x != int_date_end)) {
+					//Reached the end of the row, plot and re-create block
+					var current_cell = get_calendar_cell(current_date);
+					
+					eventBlock.style.width = ((current_cell.offsetLeft + current_cell.offsetWidth) - start_date_cell.offsetLeft) + 'px';
+					document.body.appendChild(eventBlock);
+					
+					var eventBlock = document.createElement("div");
+	    			eventBlock.style.position = 'absolute';
+	    			
+	    			var nextCell = get_calendar_cell(new Date(x+86400000));
+	    			
+	    			eventBlock.style.top = (nextCell.offsetTop + (event_offset_Y * free_row)) + 'px';
+	    			eventBlock.style.left = (nextCell.offsetLeft + event_offset_X) + 'px';
+			    	eventBlock.style.backgroundColor = new_event.color;
+	    			eventBlock.className = "event";
+	    			eventBlockCell = nextCell;
+				}	
+	    	}
+	    	
+	    	var end_date_cell = get_calendar_cell(new_event.end);
+
+	    	eventBlock.style.width = ((end_date_cell.offsetLeft + end_date_cell.offsetWidth) - eventBlockCell.offsetLeft) + 'px';
 	    	document.body.appendChild(eventBlock);
 	    }
-	    
 	}
 	
 	//Public methods	
@@ -151,7 +204,7 @@ var EventCalendar = function (dom_element, month, year, settings) {
 			targetnode = target;
 		},
 		AddEventsInJSON : function(json_events){
-			if (eval(json_events).eventcount > 0) plot_data(json_events);
+			if (eval(json_events).eventcount > 0) plot_data(json_events, date_matrix);
 		}
 		
 	};
