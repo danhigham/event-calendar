@@ -33,4 +33,14 @@ div.event {
 	height : 15px;
 	margin-top : 20px;
 	background : #0a0a0a;
+
+}
+
+div#event_info_dialog {
+	height : 200px;
+	width : 200px;
+	position : absolute;
+	background : #ffffff;
+	visibility : hidden;
+	border : 1px solid #000000;
 }
